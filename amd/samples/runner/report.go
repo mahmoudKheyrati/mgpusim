@@ -8,7 +8,6 @@ import (
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/simulation"
 	"github.com/sarchlab/akita/v4/tracing"
-	"github.com/sarchlab/mgpusim/v4/amd/driver/internal"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cu"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/rdma"
 )
@@ -139,11 +138,11 @@ func (r *reporter) InitMemAllocTracer(
 	memAllocator := d.GetMemoryAllocator()
 	devices := d.GetDevices()
 
-	// Import the internal package types through interface{}
+	// Pass as interface{} - newMemAllocTracer will handle conversion
 	r.memAllocTracer = newMemAllocTracer(
 		timeTeller,
-		memAllocator.(internal.MemoryAllocator),
-		devices.([]*internal.Device),
+		memAllocator,
+		devices,
 		samplingPeriod,
 		outputFileName,
 	)
