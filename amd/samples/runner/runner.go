@@ -139,6 +139,18 @@ func (r *Runner) AddBenchmarkWithoutSettingGPUsToUse(b benchmarks.Benchmark) {
 
 // Run runs the benchmark
 func (r *Runner) Run() {
+	// Initialize memory allocation tracer if needed
+	if r.reporter != nil {
+		r.reporter.InitMemAllocTracer(
+			r.Engine(),
+			r.Driver(),
+			*memAllocTracingSamplingPeriodFlag,
+			*memAllocTracingFileNameFlag,
+		)
+		r.reporter.StartMemAllocTracing()
+		defer r.reporter.CloseMemAllocTracer()
+	}
+
 	r.Driver().Run()
 
 	var wg sync.WaitGroup
@@ -160,6 +172,11 @@ func (r *Runner) Run() {
 		}(b, &wg)
 	}
 	wg.Wait()
+
+	// Stop memory allocation tracing before reporting
+	if r.reporter != nil {
+		r.reporter.StopMemAllocTracing()
+	}
 
 	if r.reporter != nil {
 		r.reporter.report()

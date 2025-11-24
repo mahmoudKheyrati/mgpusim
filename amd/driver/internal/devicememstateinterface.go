@@ -10,6 +10,10 @@ type DeviceMemoryState interface {
 	popNextAvailablePAddrs() uint64
 	noAvailablePAddrs() bool
 	allocateMultiplePages(numPages int) []uint64
+
+	// Public methods for querying state
+	GetStorageSize() uint64
+	GetFreeMemorySize() uint64
 }
 
 // NewDeviceMemoryState creates a new device memory state based on allocator type.
@@ -30,7 +34,7 @@ func newDeviceRegularMemoryState(log2pagesize uint64) DeviceMemoryState {
 	}
 }
 
-//original implementation of DeviceMemoryState holding free addresses in array
+// original implementation of DeviceMemoryState holding free addresses in array
 type deviceMemoryStateImpl struct {
 	log2PageSize    uint64
 	initialAddress  uint64
@@ -49,7 +53,7 @@ func (dms *deviceMemoryStateImpl) setInitialAddress(addr uint64) {
 }
 
 func (dms *deviceMemoryStateImpl) getInitialAddress() uint64 {
-		return dms.initialAddress
+	return dms.initialAddress
 }
 
 func (dms *deviceMemoryStateImpl) setStorageSize(size uint64) {
@@ -64,10 +68,10 @@ func (dms *deviceMemoryStateImpl) addSinglePAddr(addr uint64) {
 	dms.availablePAddrs = append(dms.availablePAddrs, addr)
 }
 
-func (dms *deviceMemoryStateImpl) popNextAvailablePAddrs() uint64  {
+func (dms *deviceMemoryStateImpl) popNextAvailablePAddrs() uint64 {
 	nextPAddr := dms.availablePAddrs[0]
 	dms.availablePAddrs = dms.availablePAddrs[1:]
-	return  nextPAddr
+	return nextPAddr
 }
 
 func (dms *deviceMemoryStateImpl) noAvailablePAddrs() bool {
@@ -82,4 +86,15 @@ func (dms *deviceMemoryStateImpl) allocateMultiplePages(
 		pAddrs = append(pAddrs, pAddr)
 	}
 	return pAddrs
+}
+
+// GetStorageSize returns the total storage size
+func (dms *deviceMemoryStateImpl) GetStorageSize() uint64 {
+	return dms.storageSize
+}
+
+// GetFreeMemorySize returns the available free memory size
+func (dms *deviceMemoryStateImpl) GetFreeMemorySize() uint64 {
+	pageSize := uint64(1 << dms.log2PageSize)
+	return uint64(len(dms.availablePAddrs)) * pageSize
 }

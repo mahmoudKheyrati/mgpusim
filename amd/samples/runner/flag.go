@@ -27,6 +27,14 @@ var rdmaTransactionCountReportFlag = flag.Bool("report-rdma-transaction-count",
 	false, "Report the number of transactions going through the RDMA engines.")
 var dramTransactionCountReportFlag = flag.Bool("report-dram-transaction-count",
 	false, "Report the number of transactions accessing the DRAMs.")
+var memUtilReportFlag = flag.Bool("report-mem-util", false,
+	"Report memory utilization metrics including bandwidth, request counts, and outstanding requests.")
+var memAllocTracingFlag = flag.Bool("trace-mem-alloc", false,
+	"Trace memory allocation over time and output to CSV file for plotting.")
+var memAllocTracingSamplingPeriodFlag = flag.Float64("trace-mem-alloc-period", 0.001,
+	"Sampling period for memory allocation tracing in simulation seconds.")
+var memAllocTracingFileNameFlag = flag.String("trace-mem-alloc-file", "memory_allocation.csv",
+	"Output file name for memory allocation trace.")
 var gpuFlag = flag.String("gpus", "",
 	"The GPUs to use, use a format like 1,2,3,4. By default, GPU 1 is used.")
 var unifiedGPUFlag = flag.String("unified-gpus", "",

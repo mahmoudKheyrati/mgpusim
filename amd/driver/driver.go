@@ -814,3 +814,13 @@ func (d *Driver) sendToMMU() bool {
 
 	return false
 }
+
+// GetMemoryAllocator returns the driver's memory allocator
+func (d *Driver) GetMemoryAllocator() internal.MemoryAllocator {
+	return d.memAllocator
+}
+
+// GetDevices returns the list of devices
+func (d *Driver) GetDevices() []*internal.Device {
+	return d.devices
+}
