@@ -8,6 +8,7 @@ import (
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/simulation"
 	"github.com/sarchlab/akita/v4/tracing"
+	"github.com/sarchlab/mgpusim/v4/amd/driver/internal"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cu"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/rdma"
 )
@@ -88,6 +89,7 @@ type reporter struct {
 	simdBusyTimeTracers     []*simdBusyTimeTracer
 	cuCPITraces             []*cuCPIStackTracer
 	memUtilTracers          []*memUtilizationTracer
+	memAllocTracer          *memAllocTracer
 
 	ReportInstCount            bool
 	ReportCacheLatency         bool
@@ -110,6 +112,62 @@ func newReporter(s *simulation.Simulation) *reporter {
 	r.dataRecorder.CreateTable(tableName, metric{})
 
 	return r
+}
+
+// InitMemAllocTracer initializes the memory allocation tracer
+func (r *reporter) InitMemAllocTracer(
+	timeTeller sim.TimeTeller,
+	driver interface{},
+	samplingPeriod float64,
+	outputFileName string,
+) {
+	if !*reportAll && !*memAllocTracingFlag {
+		return
+	}
+
+	// Type assert to get the driver with the new methods
+	type driverWithMemInfo interface {
+		GetMemoryAllocator() interface{}
+		GetDevices() interface{}
+	}
+
+	d, ok := driver.(driverWithMemInfo)
+	if !ok {
+		return
+	}
+
+	memAllocator := d.GetMemoryAllocator()
+	devices := d.GetDevices()
+
+	// Import the internal package types through interface{}
+	r.memAllocTracer = newMemAllocTracer(
+		timeTeller,
+		memAllocator.(internal.MemoryAllocator),
+		devices.([]*internal.Device),
+		samplingPeriod,
+		outputFileName,
+	)
+}
+
+// StartMemAllocTracing starts memory allocation tracing
+func (r *reporter) StartMemAllocTracing() {
+	if r.memAllocTracer != nil {
+		r.memAllocTracer.Start()
+	}
+}
+
+// StopMemAllocTracing stops memory allocation tracing
+func (r *reporter) StopMemAllocTracing() {
+	if r.memAllocTracer != nil {
+		r.memAllocTracer.Stop()
+	}
+}
+
+// CloseMemAllocTracer closes the memory allocation tracer
+func (r *reporter) CloseMemAllocTracer() {
+	if r.memAllocTracer != nil {
+		r.memAllocTracer.Close()
+	}
 }
 
 func (r *reporter) injectTracers(s *simulation.Simulation) {
