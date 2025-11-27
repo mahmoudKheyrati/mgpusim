@@ -8,6 +8,18 @@ import (
 	"github.com/sarchlab/akita/v4/sim"
 )
 
+// PageMigrationCallback is called when a page migration completes
+type PageMigrationCallback func(
+	pageAddr uint64,
+	pageSize uint64,
+	sourceGPU string,
+	destGPU string,
+	sourcePhysAddr uint64,
+	destPhysAddr uint64,
+	migrationDuration sim.VTimeInSec,
+	dataTransferSize uint64,
+)
+
 // PageMigrationController control page migration
 type PageMigrationController struct {
 	*sim.TickingComponent
@@ -44,6 +56,9 @@ type PageMigrationController struct {
 	TotalDataTransferTime sim.VTimeInSec
 
 	isHandlingPageMigration bool
+
+	// Migration tracking callback
+	MigrationCallback PageMigrationCallback
 }
 
 // Tick updates the status of a PageMigrationController.
@@ -395,7 +410,34 @@ func (e *PageMigrationController) sendMigrationCompleteRspToCtrlPort() bool {
 
 	if err == nil {
 		e.DataTransferEndTime = e.TickingComponent.TickScheduler.CurrentTime()
-		e.TotalDataTransferTime = e.TotalDataTransferTime + (e.DataTransferEndTime - e.DataTransferStartTime)
+		migrationDuration := e.DataTransferEndTime - e.DataTransferStartTime
+		e.TotalDataTransferTime = e.TotalDataTransferTime + migrationDuration
+
+		// Call the migration tracking callback if set
+		if e.MigrationCallback != nil && e.currentMigrationRequest != nil {
+			// Get page address (aligned to page boundary)
+			pageSize := e.currentMigrationRequest.PageSize
+			sourceAddr := e.currentMigrationRequest.ToReadFromPhysicalAddress
+			destAddr := e.currentMigrationRequest.ToWriteToPhysicalAddress
+			pageAddr := (sourceAddr / pageSize) * pageSize
+
+			// Get GPU names from the component name
+			// Format is typically "GPU<ID>.PMC"
+			sourceGPU := e.currentMigrationRequest.PMCPortOfRemoteGPU.Component().Name()
+			destGPU := e.Name()
+
+			e.MigrationCallback(
+				pageAddr,
+				pageSize,
+				sourceGPU,
+				destGPU,
+				sourceAddr,
+				destAddr,
+				migrationDuration,
+				pageSize, // Total data transferred
+			)
+		}
+
 		e.isHandlingPageMigration = false
 		e.currentMigrationRequest = nil
 		e.toSendToCtrlPort = nil

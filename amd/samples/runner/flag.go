@@ -45,6 +45,8 @@ var bufferLevelTracePeriodFlag = flag.Float64("buffer-level-trace-period", 0.0,
 	"The period to dump the buffer level trace.")
 var simdBusyTimeTracerFlag = flag.Bool("report-busy-time", false, "Report SIMD Unit's busy time")
 var reportCPIStackFlag = flag.Bool("report-cpi-stack", false, "Report CPI stack")
+var pageAccessTracerFlag = flag.Bool("report-page-access", false,
+	"Report GPU page access tracking, migration, and replication data")
 var customPortForAkitaRTM = flag.Int("akitartm-port", 0,
 	`Custom port to host AkitaRTM. A 4-digit or 5-digit port number is required. If 
 this number is not given or a invalid number is given number, a random port 

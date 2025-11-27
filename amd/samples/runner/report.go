@@ -5,10 +5,12 @@ import (
 	"strings"
 
 	"github.com/sarchlab/akita/v4/datarecording"
+	"github.com/sarchlab/akita/v4/mem/vm/mmu"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/simulation"
 	"github.com/sarchlab/akita/v4/tracing"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cu"
+	"github.com/sarchlab/mgpusim/v4/amd/timing/pagemigrationcontroller"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/rdma"
 )
 
@@ -82,6 +84,7 @@ type reporter struct {
 	rdmaTransactionCounters []*rdmaTransactionCountTracer
 	simdBusyTimeTracers     []*simdBusyTimeTracer
 	cuCPITraces             []*cuCPIStackTracer
+	pageAccessTracer        *PageAccessTracer
 
 	ReportInstCount            bool
 	ReportCacheLatency         bool
@@ -91,6 +94,7 @@ type reporter struct {
 	ReportDRAMTransactionCount bool
 	ReportSIMDBusyTime         bool
 	ReportCPIStack             bool
+	ReportPageAccess           bool
 }
 
 func newReporter(s *simulation.Simulation) *reporter {
@@ -115,6 +119,7 @@ func (r *reporter) injectTracers(s *simulation.Simulation) {
 	r.injectRDMAEngineTracer(s)
 	r.injectDRAMTracer(s)
 	r.injectSIMDBusyTimeTracer(s)
+	r.injectPageAccessTracer(s)
 }
 
 func (r *reporter) injectKernelTimeTracer(s *simulation.Simulation) {
@@ -352,6 +357,69 @@ func (r *reporter) injectSIMDBusyTimeTracer(s *simulation.Simulation) {
 	}
 }
 
+func (r *reporter) injectPageAccessTracer(s *simulation.Simulation) {
+	if !*reportAll && !*pageAccessTracerFlag {
+		return
+	}
+
+	// Get log2PageSize from the first MMU component
+	var log2PageSize uint64 = 12 // Default to 4KB pages
+	for _, comp := range s.Components() {
+		if strings.Contains(comp.Name(), "MMU") {
+			if mmuComp, ok := comp.(*mmu.Comp); ok {
+				log2PageSize = mmuComp.Log2PageSize
+				break
+			}
+		}
+	}
+
+	r.pageAccessTracer = NewPageAccessTracer(
+		r.dataRecorder,
+		s.GetEngine(),
+		log2PageSize,
+	)
+
+	// Store the tracer globally so other components can access it
+	GlobalPageAccessTracer = r.pageAccessTracer
+
+	// Set up migration tracking callbacks for all PMCs
+	r.injectPMCCallbacks(s)
+}
+
+func (r *reporter) injectPMCCallbacks(s *simulation.Simulation) {
+	if r.pageAccessTracer == nil {
+		return
+	}
+
+	// Find all PMC components and set up migration tracking callbacks
+	for _, comp := range s.Components() {
+		if pmc, ok := comp.(*pagemigrationcontroller.PageMigrationController); ok {
+			// Set up the migration callback
+			pmc.MigrationCallback = func(
+				pageAddr uint64,
+				pageSize uint64,
+				sourceGPU string,
+				destGPU string,
+				sourcePhysAddr uint64,
+				destPhysAddr uint64,
+				migrationDuration sim.VTimeInSec,
+				dataTransferSize uint64,
+			) {
+				r.pageAccessTracer.RecordPageMigration(
+					pageAddr,
+					pageSize,
+					sourceGPU,
+					destGPU,
+					sourcePhysAddr,
+					destPhysAddr,
+					migrationDuration,
+					dataTransferSize,
+				)
+			}
+		}
+	}
+}
+
 func (r *reporter) report() {
 	r.reportKernelTime()
 	r.reportInstCount()
@@ -362,6 +430,7 @@ func (r *reporter) report() {
 	r.reportTLBHitRate()
 	r.reportRDMATransactionCount()
 	r.reportDRAMTransactionCount()
+	r.reportPageAccess()
 }
 
 func (r *reporter) reportKernelTime() {
@@ -692,4 +761,44 @@ func (r *reporter) reportDRAMTransactionCount() {
 			},
 		)
 	}
+}
+
+func (r *reporter) reportPageAccess() {
+	if r.pageAccessTracer == nil {
+		return
+	}
+
+	// Finalize the page access tracer to generate page sharing summary
+	r.pageAccessTracer.Finalize()
+
+	// Report summary metrics
+	r.dataRecorder.InsertData(
+		tableName,
+		metric{
+			Location: "PageAccessTracer",
+			What:     "total_pages_accessed",
+			Value:    float64(r.pageAccessTracer.GetTotalPagesAccessed()),
+			Unit:     "count",
+		},
+	)
+
+	r.dataRecorder.InsertData(
+		tableName,
+		metric{
+			Location: "PageAccessTracer",
+			What:     "total_page_migrations",
+			Value:    float64(r.pageAccessTracer.GetMigrationCount()),
+			Unit:     "count",
+		},
+	)
+
+	r.dataRecorder.InsertData(
+		tableName,
+		metric{
+			Location: "PageAccessTracer",
+			What:     "total_page_replications",
+			Value:    float64(r.pageAccessTracer.GetReplicationCount()),
+			Unit:     "count",
+		},
+	)
 }
