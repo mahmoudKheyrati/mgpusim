@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/sarchlab/akita/v4/datarecording"
-	"github.com/sarchlab/akita/v4/mem/vm/mmu"
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/simulation"
 	"github.com/sarchlab/akita/v4/tracing"
@@ -362,16 +361,9 @@ func (r *reporter) injectPageAccessTracer(s *simulation.Simulation) {
 		return
 	}
 
-	// Get log2PageSize from the first MMU component
-	var log2PageSize uint64 = 12 // Default to 4KB pages
-	for _, comp := range s.Components() {
-		if strings.Contains(comp.Name(), "MMU") {
-			if mmuComp, ok := comp.(*mmu.Comp); ok {
-				log2PageSize = mmuComp.Log2PageSize
-				break
-			}
-		}
-	}
+	// Use default page size of 4KB (log2PageSize = 12)
+	// This is the standard page size used in MGPUSim
+	log2PageSize := uint64(12)
 
 	r.pageAccessTracer = NewPageAccessTracer(
 		r.dataRecorder,

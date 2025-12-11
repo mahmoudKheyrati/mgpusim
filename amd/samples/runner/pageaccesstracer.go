@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/sarchlab/akita/v4/datarecording"
+	"github.com/sarchlab/akita/v4/mem/vm"
 	"github.com/sarchlab/akita/v4/sim"
 )
 
@@ -24,7 +25,7 @@ type PageAccessRecord struct {
 	AccessType   string // "read", "write"
 	GPUID        string
 	CUID         string
-	PID          sim.PID
+	PID          vm.PID
 	VirtualAddr  uint64
 	PhysicalAddr uint64
 }
@@ -141,7 +142,7 @@ func (t *PageAccessTracer) RecordPageAccess(
 	accessType string,
 	gpuID string,
 	cuID string,
-	pid sim.PID,
+	pid vm.PID,
 ) {
 	if !t.pageAccessEnabled {
 		return

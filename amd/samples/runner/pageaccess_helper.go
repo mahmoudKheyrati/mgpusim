@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"github.com/sarchlab/akita/v4/mem/vm"
 	"github.com/sarchlab/akita/v4/sim"
 )
 
@@ -33,7 +34,7 @@ func TrackMemoryAccess(
 	accessType string,
 	gpuID string,
 	cuID string,
-	pid sim.PID,
+	pid vm.PID,
 ) {
 	if GlobalPageAccessTracer != nil {
 		GlobalPageAccessTracer.RecordPageAccess(
