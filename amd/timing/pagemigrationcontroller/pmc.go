@@ -1,6 +1,7 @@
 package pagemigrationcontroller
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 
@@ -421,9 +422,10 @@ func (e *PageMigrationController) sendMigrationCompleteRspToCtrlPort() bool {
 			destAddr := e.currentMigrationRequest.ToWriteToPhysicalAddress
 			pageAddr := (sourceAddr / pageSize) * pageSize
 
-			// Get GPU names from the component name
-			// Format is typically "GPU<ID>.PMC"
-			sourceGPU := e.currentMigrationRequest.PMCPortOfRemoteGPU.Component().Name()
+			// Get GPU names from the PMC component names
+			// The remote PMC port string representation contains the component name
+			// We use the destination PMC port string as the source since we're pulling data FROM there
+			sourceGPU := fmt.Sprintf("%v", e.currentMigrationRequest.PMCPortOfRemoteGPU)
 			destGPU := e.Name()
 
 			e.MigrationCallback(
