@@ -7,6 +7,7 @@ import (
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/tracing"
 	"github.com/sarchlab/mgpusim/v4/amd/insts"
+	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/wavefront"
 )
 
@@ -241,6 +242,27 @@ func (u *VectorMemoryUnit) sendRequest() bool {
 		u.numTransactionInFlight--
 
 		tracing.TraceReqInitiate(req, u.cu, info.Inst.ID)
+
+		// Track page access for analysis
+		if info.Read != nil {
+			runner.TrackMemoryAccess(
+				info.Read.Address, // Virtual address (before translation)
+				info.Read.Address, // Physical address (we use same for now)
+				"read",
+				u.cu.Name(),
+				u.cu.Name(),
+				info.Read.PID,
+			)
+		} else if info.Write != nil {
+			runner.TrackMemoryAccess(
+				info.Write.Address,
+				info.Write.Address,
+				"write",
+				u.cu.Name(),
+				u.cu.Name(),
+				info.Write.PID,
+			)
+		}
 
 		return true
 	}
