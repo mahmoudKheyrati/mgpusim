@@ -1,94 +1,19 @@
 package runner
 
 import (
-	"github.com/sarchlab/akita/v4/mem/vm"
-	"github.com/sarchlab/akita/v4/sim"
+	"github.com/sarchlab/mgpusim/v4/amd/tracing/pageaccess"
 )
 
-// TrackMemoryAccess is a helper function to track page accesses from memory operations.
-// This can be called from various components (CUs, caches, etc.) to record page accesses.
-//
-// Parameters:
-//   - virtualAddr: The virtual address being accessed
-//   - physicalAddr: The physical address being accessed
-//   - accessType: "read" or "write"
-//   - gpuID: The GPU ID (e.g., "GPU1", "GPU2")
-//   - cuID: The Compute Unit ID (e.g., "GPU1.ShaderArray0.CU0")
-//   - pid: The process ID
-//
-// Example usage from a Compute Unit:
-//
-//	if runner.GlobalPageAccessTracer != nil {
-//	    runner.TrackMemoryAccess(
-//	        virtualAddr,
-//	        physicalAddr,
-//	        "read",
-//	        "GPU1",
-//	        cu.Name(),
-//	        wave.PID(),
-//	    )
-//	}
-func TrackMemoryAccess(
-	virtualAddr uint64,
-	physicalAddr uint64,
-	accessType string,
-	gpuID string,
-	cuID string,
-	pid vm.PID,
-) {
-	if GlobalPageAccessTracer != nil {
-		GlobalPageAccessTracer.RecordPageAccess(
-			virtualAddr,
-			physicalAddr,
-			accessType,
-			gpuID,
-			cuID,
-			pid,
-		)
-	}
-}
+// Re-export helper functions from pageaccess package for backward compatibility
 
-// TrackPageMigration is a helper function to manually track page migrations.
-// This is typically called automatically by the PMC, but can be used for custom migration tracking.
-func TrackPageMigration(
-	pageAddr uint64,
-	pageSize uint64,
-	sourceGPU string,
-	destGPU string,
-	sourcePhysAddr uint64,
-	destPhysAddr uint64,
-	migrationDuration sim.VTimeInSec,
-	dataTransferSize uint64,
-) {
-	if GlobalPageAccessTracer != nil {
-		GlobalPageAccessTracer.RecordPageMigration(
-			pageAddr,
-			pageSize,
-			sourceGPU,
-			destGPU,
-			sourcePhysAddr,
-			destPhysAddr,
-			migrationDuration,
-			dataTransferSize,
-		)
-	}
-}
+// TrackMemoryAccess is re-exported from pageaccess package
+// Deprecated: Use pageaccess.TrackMemoryAccess instead
+var TrackMemoryAccess = pageaccess.TrackMemoryAccess
 
-// TrackPageReplication is a helper function to track page replications.
-func TrackPageReplication(
-	pageAddr uint64,
-	pageSize uint64,
-	sourceGPU string,
-	destGPU string,
-	replicaPhysAddr uint64,
-) {
-	if GlobalPageAccessTracer != nil {
-		GlobalPageAccessTracer.RecordPageReplication(
-			pageAddr,
-			pageSize,
-			sourceGPU,
-			destGPU,
-			replicaPhysAddr,
-		)
-	}
-}
+// TrackPageMigration is re-exported from pageaccess package
+// Deprecated: Use pageaccess.TrackPageMigration instead
+var TrackPageMigration = pageaccess.TrackPageMigration
+
+// TrackPageReplication is re-exported from pageaccess package
+// Deprecated: Use pageaccess.TrackPageReplication instead
+var TrackPageReplication = pageaccess.TrackPageReplication

@@ -11,6 +11,7 @@ import (
 	"github.com/sarchlab/mgpusim/v4/amd/timing/cu"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/pagemigrationcontroller"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/rdma"
+	"github.com/sarchlab/mgpusim/v4/amd/tracing/pageaccess"
 )
 
 const (
@@ -83,7 +84,7 @@ type reporter struct {
 	rdmaTransactionCounters []*rdmaTransactionCountTracer
 	simdBusyTimeTracers     []*simdBusyTimeTracer
 	cuCPITraces             []*cuCPIStackTracer
-	pageAccessTracer        *PageAccessTracer
+	pageAccessTracer        *pageaccess.PageAccessTracer
 
 	ReportInstCount            bool
 	ReportCacheLatency         bool
@@ -365,14 +366,14 @@ func (r *reporter) injectPageAccessTracer(s *simulation.Simulation) {
 	// This is the standard page size used in MGPUSim
 	log2PageSize := uint64(12)
 
-	r.pageAccessTracer = NewPageAccessTracer(
+	r.pageAccessTracer = pageaccess.NewPageAccessTracer(
 		r.dataRecorder,
 		s.GetEngine(),
 		log2PageSize,
 	)
 
 	// Store the tracer globally so other components can access it
-	GlobalPageAccessTracer = r.pageAccessTracer
+	pageaccess.GlobalPageAccessTracer = r.pageAccessTracer
 
 	// Set up migration tracking callbacks for all PMCs
 	r.injectPMCCallbacks(s)

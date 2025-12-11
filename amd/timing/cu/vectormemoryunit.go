@@ -7,8 +7,8 @@ import (
 	"github.com/sarchlab/akita/v4/sim"
 	"github.com/sarchlab/akita/v4/tracing"
 	"github.com/sarchlab/mgpusim/v4/amd/insts"
-	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/wavefront"
+	"github.com/sarchlab/mgpusim/v4/amd/tracing/pageaccess"
 )
 
 type vectorMemInst struct {
@@ -245,7 +245,7 @@ func (u *VectorMemoryUnit) sendRequest() bool {
 
 		// Track page access for analysis
 		if info.Read != nil {
-			runner.TrackMemoryAccess(
+			pageaccess.TrackMemoryAccess(
 				info.Read.Address, // Virtual address (before translation)
 				info.Read.Address, // Physical address (we use same for now)
 				"read",
@@ -254,7 +254,7 @@ func (u *VectorMemoryUnit) sendRequest() bool {
 				info.Read.PID,
 			)
 		} else if info.Write != nil {
-			runner.TrackMemoryAccess(
+			pageaccess.TrackMemoryAccess(
 				info.Write.Address,
 				info.Write.Address,
 				"write",

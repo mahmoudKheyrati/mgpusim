@@ -7,8 +7,8 @@ import (
 	"github.com/sarchlab/akita/v4/tracing"
 	"github.com/sarchlab/mgpusim/v4/amd/emu"
 	"github.com/sarchlab/mgpusim/v4/amd/insts"
-	"github.com/sarchlab/mgpusim/v4/amd/samples/runner"
 	"github.com/sarchlab/mgpusim/v4/amd/timing/wavefront"
+	"github.com/sarchlab/mgpusim/v4/amd/tracing/pageaccess"
 )
 
 // A ScalarUnit performs Scalar operations
@@ -233,7 +233,7 @@ func (u *ScalarUnit) sendRequest() bool {
 			u.readBuf = u.readBuf[1:]
 
 			// Track page access for analysis
-			runner.TrackMemoryAccess(
+			pageaccess.TrackMemoryAccess(
 				req.Address,
 				req.Address,
 				"read",
