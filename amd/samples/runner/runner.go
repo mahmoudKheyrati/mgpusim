@@ -101,9 +101,23 @@ func (r *Runner) configureVisTracing() {
 		return
 	}
 
+	filter := parseTraceFilter()
 	visTracer := r.simulation.GetVisTracer()
+
+	// Wrap with a FilteringTracer only when task-level rules are active,
+	// so there is zero overhead when no task filtering is requested.
+	var effectiveTracer tracing.Tracer = visTracer
+	if filter.HasTaskFilters() {
+		effectiveTracer = NewFilteringTracer(visTracer, filter)
+	}
+
 	for _, comp := range r.simulation.Components() {
-		tracing.CollectTrace(comp.(tracing.NamedHookable), visTracer)
+		// Component-level filter: skip hook registration entirely for
+		// denied components, saving hook-dispatch overhead at runtime.
+		if filter.HasComponentFilters() && !filter.ComponentAllowed(comp.Name()) {
+			continue
+		}
+		tracing.CollectTrace(comp.(tracing.NamedHookable), effectiveTracer)
 	}
 }
 

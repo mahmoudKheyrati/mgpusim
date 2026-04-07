@@ -57,6 +57,36 @@ var analyzerNameFlag = flag.String("analyzer-name", "",
 var analyzerPeriodFlag = flag.Float64("analyzer-period", 0.0,
 	"The period to dump the analyzer results.")
 
+// Trace filtering flags.
+// Patterns support * and ? glob wildcards; plain strings match as substrings.
+// Multiple values are separated by commas.
+var traceAllowComponents = flag.String("trace-allow-components", "",
+	"Comma-separated component name patterns to include in vis-tracing. "+
+		"Supports * and ? wildcards. Empty means all components are included. "+
+		"Example: --trace-allow-components=\"*CU*,*Cache*\"")
+var traceDenyComponents = flag.String("trace-deny-components", "",
+	"Comma-separated component name patterns to exclude from vis-tracing. "+
+		"Applied after --trace-allow-components. "+
+		"Example: --trace-deny-components=\"*TLB*,*RDMA*\"")
+var traceAllowKinds = flag.String("trace-allow-kinds", "",
+	"Comma-separated task Kind values to include in vis-tracing. "+
+		"Empty means all kinds are included. "+
+		"Known kinds: wavefront, inst, fetch, pipeline, req_in, req_out. "+
+		"Example: --trace-allow-kinds=\"wavefront,pipeline\"")
+var traceDenyKinds = flag.String("trace-deny-kinds", "",
+	"Comma-separated task Kind values to exclude from vis-tracing. "+
+		"Applied after --trace-allow-kinds. "+
+		"Example: --trace-deny-kinds=\"req_in,req_out\"")
+var traceAllowWhats = flag.String("trace-allow-whats", "",
+	"Comma-separated task What values to include in vis-tracing. "+
+		"Empty means all What values are included. "+
+		"Example: --trace-allow-whats=\"VALU,VMem\"")
+var traceDenyWhats = flag.String("trace-deny-whats", "",
+	"Comma-separated task What values to exclude from vis-tracing. "+
+		"Applied after --trace-allow-whats. "+
+		"Example: --trace-deny-whats=\"fetch\"")
+
+
 var visTracing = flag.Bool("trace-vis", false,
 	"Generate trace for visualization purposes.")
 var visTracerDB = flag.String("trace-vis-db", "sqlite",
